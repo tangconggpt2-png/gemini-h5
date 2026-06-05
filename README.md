@@ -34,3 +34,25 @@ cp registry.env.example registry.env
 docker login crpi-v6rtj1tjk3pa7z2d.cn-hangzhou.personal.cr.aliyuncs.com
 bash scripts/push-image.sh
 ```
+
+## 代码仓库
+
+| 平台 | 远程名 | 地址 |
+|------|--------|------|
+| Codeup | `origin` | `https://codeup.aliyun.com/6a22920c6e68a85a0d177e0b/gemini-h5.git` |
+| GitHub | `github` | `git@github.com:<你的用户名>/gemini-h5.git` |
+
+推送到 GitHub（需先在 GitHub 创建空仓库 `gemini-h5`）：
+
+```bash
+# 方式一：SSH（将 id_ed25519.pub 添加到 GitHub → Settings → SSH keys）
+git remote add github git@github.com:你的用户名/gemini-h5.git   # 仅首次
+git push github main
+
+# 方式二：Personal Access Token
+$env:GITHUB_OWNER="你的用户名"
+$env:GITHUB_TOKEN="ghp_xxxx"
+powershell -File scripts/push-github.ps1
+```
+
+国内网络访问 GitHub 不稳定时，可开代理后再 push。
