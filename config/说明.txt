@@ -1,0 +1,35 @@
+配置说明
+========
+
+优先级：宿主机挂载 config/、examples/ > 镜像内置 defaults/（换机未配好时自动用默认值）
+
+0. ai.config
+   API 地址、密钥、模型（KEY=VALUE 格式）。修改后保存即可，无需重启。
+   示例文件：ai.config.example（复制为 ai.config 后填写，勿提交 Git）
+   镜像默认值来源：defaults/config/（改后需 docker compose up -d --build）
+
+1. system_prompt.txt
+   系统提示词（你希望 AI 遵守的总体要求）。
+   修改后保存即可，无需重启 Docker
+
+2. active_examples.txt
+   指定要加入 prompt 的示例文件（写在 examples/ 目录下的文件名）。
+   每行一个文件名，例如：
+     example01-food.txt
+     example02-five-haves-five-nots.txt
+   或在同一行用逗号分隔多个文件。
+
+3. examples/ 目录
+   每个文件一组「修改前 + 修改后」，推荐格式：
+
+   【修改前】
+   （原文案）
+
+   【修改后】
+   （改好的文案）
+
+   可放任意多个 .txt 文件；只在 active_examples.txt 里列出的才会传给 AI。
+
+宿主机路径（72，可选挂载；文件不存在时用镜像 defaults）：
+  /root/gemini-h5-deploy/config/
+  /root/gemini-h5-deploy/examples/

@@ -1,0 +1,10 @@
+[common]
+server_addr = frp4.ccszxc.xin
+server_port = 55722
+token = your-frp-token
+
+[http-55730]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 10000
+remote_port = 55730

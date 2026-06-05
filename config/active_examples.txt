@@ -1,0 +1,5 @@
+# Enabled example files (under examples/)
+# One filename per line, or comma-separated on one line
+# Lines starting with # are comments
+
+example02-five-haves-five-nots.txt

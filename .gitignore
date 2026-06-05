@@ -1,0 +1,13 @@
+.env
+config/ai.config
+defaults/config/ai.config
+registry.env
+frp/frpc
+frp/frpc.ini
+data/
+data/chat.log
+*.log
+gemini-h5-image.tar
+__pycache__/
+*.pyc
+.DS_Store

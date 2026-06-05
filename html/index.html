@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>AI 文案助手--0605</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f6f6;
+      color: #111;
+      font-size: 22px;
+      line-height: 1.6;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin: 0 0 20px;
+    }
+
+    .status {
+      margin-bottom: 16px;
+      padding: 14px;
+      background: #fff;
+      border-radius: 12px;
+      border: 2px solid #ddd;
+      font-size: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 16px;
+      font-size: 24px;
+      line-height: 1.5;
+      border-radius: 12px;
+      border: 2px solid #999;
+      resize: vertical;
+      background: #fff;
+    }
+
+    button {
+      width: 100%;
+      min-height: 72px;
+      margin-top: 14px;
+      font-size: 26px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:focus {
+      outline: 4px solid #007aff;
+      outline-offset: 3px;
+    }
+
+    button.secondary {
+      background: #555;
+    }
+
+    button.danger {
+      background: #a40000;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .reply-box {
+      margin-top: 24px;
+      padding: 18px;
+      background: #fff;
+      border-radius: 12px;
+      border: 2px solid #ddd;
+      min-height: 180px;
+      font-size: 24px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .label {
+      font-weight: 700;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>AI 文案助手--0605</h1>
+
+    <div
+      id="status"
+      class="status"
+      role="status"
+      aria-live="polite"
+    >
+      当前状态：正在加载页面。
+    </div>
+
+    <div class="label">
+      请输入原始文章
+    </div>
+
+    <textarea
+      id="messageInput"
+      aria-label="请输入需要改写的文章"
+      placeholder="请在这里输入需要改写的文章。"
+    ></textarea>
+
+    <button
+      id="pasteButton"
+      aria-label="从剪贴板粘贴文案"
+    >
+      粘贴文案
+    </button>
+
+    <button
+      id="sendButton"
+      class="hidden"
+      aria-label="发送文章给 AI 修改"
+    >
+      发送问题
+    </button>
+
+    <button
+      id="readButton"
+      class="secondary"
+      aria-label="朗读 AI 的回复"
+    >
+      朗读回复
+    </button>
+
+    <button
+      id="copyButton"
+      class="secondary"
+      aria-label="复制 AI 的回复"
+    >
+      复制回复
+    </button>
+
+    <button
+      id="clearButton"
+      class="danger"
+      aria-label="清空当前对话"
+    >
+      清空对话
+    </button>
+
+    <div class="label">
+      AI 的回复
+    </div>
+
+    <section
+      id="replyBox"
+      class="reply-box"
+      tabindex="0"
+      aria-label="AI 的回复内容"
+      aria-live="polite"
+    >
+      这里会显示 AI 的回复。
+    </section>
+  </main>
+
+  <script>
+    const API_URL = "/api/chat";
+
+    const messageInput = document.getElementById("messageInput");
+    const replyBox = document.getElementById("replyBox");
+    const statusBox = document.getElementById("status");
+
+    const pasteButton = document.getElementById("pasteButton");
+    const sendButton = document.getElementById("sendButton");
+    const readButton = document.getElementById("readButton");
+    const copyButton = document.getElementById("copyButton");
+    const clearButton = document.getElementById("clearButton");
+
+    let lastReply = "";
+
+    function setStatus(text) {
+      statusBox.textContent = "当前状态：" + text;
+    }
+
+    function hasOriginalArticle() {
+      return messageInput.value.trim().length > 0;
+    }
+
+    function updateMainButtonVisibility() {
+      if (hasOriginalArticle()) {
+        pasteButton.classList.add("hidden");
+        sendButton.classList.remove("hidden");
+      } else {
+        sendButton.classList.add("hidden");
+        pasteButton.classList.remove("hidden");
+      }
+    }
+
+    function speakNotice(text) {
+      if (!text || !window.speechSynthesis) {
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "zh-CN";
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function speakTextAsync(text) {
+      return new Promise((resolve) => {
+        if (!text || !window.speechSynthesis) {
+          resolve();
+          return;
+        }
+
+        try {
+          window.speechSynthesis.cancel();
+
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = "zh-CN";
+          utterance.rate = 0.95;
+          utterance.pitch = 1;
+          utterance.volume = 1;
+
+          utterance.onend = () => {
+            resolve();
+          };
+
+          utterance.onerror = () => {
+            resolve();
+          };
+
+          window.speechSynthesis.speak(utterance);
+        } catch (error) {
+          console.error(error);
+          resolve();
+        }
+      });
+    }
+
+    function speak(text) {
+      if (!text) {
+        setStatus("没有可朗读的内容。");
+        return;
+      }
+
+      if (!window.speechSynthesis) {
+        setStatus("当前浏览器不支持语音朗读。");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "zh-CN";
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      utterance.onstart = () => {
+        setStatus("正在朗读。");
+      };
+
+      utterance.onend = () => {
+        setStatus("朗读完成。");
+      };
+
+      utterance.onerror = () => {
+        setStatus("朗读失败。");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    async function readClipboardText() {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        throw new Error("当前浏览器不支持读取剪贴板。");
+      }
+
+      return await navigator.clipboard.readText();
+    }
+
+    async function pasteFromClipboard(options) {
+      const mode = options && options.mode ? options.mode : "manual";
+
+      try {
+        const text = await readClipboardText();
+        const content = (text || "").trim();
+        const length = content.length;
+
+        if (!content) {
+          setStatus("剪贴板没有可粘贴的文字。");
+          updateMainButtonVisibility();
+          return;
+        }
+
+        if (mode === "auto") {
+          if (length > 50 && length < 500) {
+            messageInput.value = content;
+            updateMainButtonVisibility();
+
+            setStatus("已自动粘贴。");
+            await speakTextAsync("已自动粘贴");
+            speak(content);
+          } else {
+            setStatus("剪贴板文字数量不符合自动粘贴要求，当前字数：" + length + "。");
+            updateMainButtonVisibility();
+          }
+
+          return;
+        }
+
+        messageInput.value = content;
+        updateMainButtonVisibility();
+
+        setStatus("已粘贴文案，当前字数：" + length + "。");
+        speakNotice("已粘贴");
+
+      } catch (error) {
+        console.error(error);
+
+        if (mode === "auto") {
+          setStatus("自动读取剪贴板失败，请点击粘贴文案按钮。");
+        } else {
+          setStatus("读取剪贴板失败，请手动长按输入框粘贴。");
+          messageInput.focus();
+        }
+
+        updateMainButtonVisibility();
+      }
+    }
+
+    async function tryAutoPasteFromClipboard() {
+      setStatus("正在检查剪贴板内容。");
+
+      if (!window.isSecureContext) {
+        setStatus("当前不是 HTTPS 页面，浏览器可能禁止自动读取剪贴板。");
+        updateMainButtonVisibility();
+        return;
+      }
+
+      await pasteFromClipboard({ mode: "auto" });
+    }
+
+    async function copyReply() {
+      const text = lastReply || replyBox.textContent.trim();
+
+      if (!text || text === "这里会显示 AI 的回复。") {
+        setStatus("没有可复制的回复。");
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const tempTextArea = document.createElement("textarea");
+          tempTextArea.value = text;
+          tempTextArea.setAttribute("readonly", "");
+          tempTextArea.style.position = "fixed";
+          tempTextArea.style.left = "-9999px";
+          document.body.appendChild(tempTextArea);
+          tempTextArea.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempTextArea);
+        }
+
+        setStatus("回复已复制。");
+        speakNotice("已复制");
+      } catch (error) {
+        console.error(error);
+        setStatus("复制失败，请手动长按回复内容复制。");
+      }
+    }
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+
+      if (!message) {
+        setStatus("请输入文章内容。");
+        messageInput.focus();
+        updateMainButtonVisibility();
+        return;
+      }
+
+      sendButton.disabled = true;
+      pasteButton.disabled = true;
+      readButton.disabled = true;
+      copyButton.disabled = true;
+      clearButton.disabled = true;
+
+      setStatus("正在请求 AI，请稍候。");
+      replyBox.textContent = "正在思考中……";
+      speakNotice("文章已发送，请稍等");
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: message
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error("HTTP " + response.status + " " + errorText);
+        }
+
+        const data = await response.json();
+
+        const reply = data.reply || "后端没有返回 reply 字段。";
+        lastReply = reply;
+        replyBox.textContent = reply;
+
+        setStatus("AI 已回复。");
+        replyBox.focus();
+
+        speak(reply);
+
+      } catch (error) {
+        console.error(error);
+        lastReply = "";
+        replyBox.textContent = "请求失败：" + error.message;
+        setStatus("请求失败。");
+      } finally {
+        sendButton.disabled = false;
+        pasteButton.disabled = false;
+        readButton.disabled = false;
+        copyButton.disabled = false;
+        clearButton.disabled = false;
+        updateMainButtonVisibility();
+      }
+    }
+
+    pasteButton.addEventListener("click", () => {
+      pasteFromClipboard({ mode: "manual" });
+    });
+
+    sendButton.addEventListener("click", sendMessage);
+
+    readButton.addEventListener("click", () => {
+      speak(lastReply || replyBox.textContent.trim());
+    });
+
+    copyButton.addEventListener("click", copyReply);
+
+    clearButton.addEventListener("click", () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      messageInput.value = "";
+      lastReply = "";
+      replyBox.textContent = "这里会显示 AI 的回复。";
+      setStatus("对话已清空。");
+      messageInput.focus();
+      updateMainButtonVisibility();
+    });
+
+    messageInput.addEventListener("input", () => {
+      updateMainButtonVisibility();
+    });
+
+    messageInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        sendMessage();
+      }
+    });
+
+    window.addEventListener("load", () => {
+      updateMainButtonVisibility();
+      tryAutoPasteFromClipboard();
+    });
+  </script>
+</body>
+</html>

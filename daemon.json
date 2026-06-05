@@ -1,0 +1,9 @@
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker.mirrors.sjtug.sjtu.edu.cn"
+  ],
+  "max-concurrent-downloads": 3
+}
