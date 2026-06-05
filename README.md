@@ -40,7 +40,7 @@ bash scripts/push-image.sh
 | 平台 | 远程名 | 地址 |
 |------|--------|------|
 | Codeup | `origin` | `https://codeup.aliyun.com/6a22920c6e68a85a0d177e0b/gemini-h5.git` |
-| GitHub | `github` | `git@github.com:<你的用户名>/gemini-h5.git` |
+| GitHub | `github` | `https://github.com/tangconggpt2-png/gemini-h5.git` |
 
 推送到 GitHub（需先在 GitHub 创建空仓库 `gemini-h5`）：
 
