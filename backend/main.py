@@ -79,9 +79,17 @@ def load_ai_settings():
     }
 
 
-LOG_FILE = os.environ.get(
+LOG_FILE_BASE = os.environ.get(
     "CHAT_LOG_FILE", os.path.join(BACKEND_DIR, "data", "chat.log")
 )
+
+
+def resolve_log_file(when=None):
+    """按日期分文件，如 data/chat.log.20260606。"""
+    when = when or datetime.datetime.now()
+    log_dir = os.path.dirname(LOG_FILE_BASE) or "."
+    base_name = os.path.basename(LOG_FILE_BASE) or "chat.log"
+    return os.path.join(log_dir, base_name + "." + when.strftime("%Y%m%d"))
 
 DEFAULT_SYSTEM_PROMPT = (
     "请出于让视频火爆的角度修改文案。"
@@ -183,8 +191,9 @@ def format_messages_for_log(messages):
 
 
 def append_log(user_message, ai_reply, messages=None, error=None):
-    """追加一条可读对话记录。"""
-    log_dir = os.path.dirname(LOG_FILE)
+    """追加一条可读对话记录（按天写入独立文件）。"""
+    log_file = resolve_log_file()
+    log_dir = os.path.dirname(log_file)
     if log_dir:
         os.makedirs(log_dir, exist_ok=True)
 
@@ -220,7 +229,7 @@ def append_log(user_message, ai_reply, messages=None, error=None):
 
     lines.append("")
 
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
+    with open(log_file, "a", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
 
